@@ -811,7 +811,6 @@ class Ports():
         self.check = ConnectionSet.ui.comboBox_3.currentText()
         self.Baud_rate = int(ConnectionSet.ui.comboBox_2.currentText())
         self.stop_bit = int(ConnectionSet.ui.comboBox_4.currentText())
-
         self.config_S = self.Communication_serial_port()
 
     def Prsend(self, strInput):

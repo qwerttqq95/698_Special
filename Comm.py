@@ -5,6 +5,120 @@ def list_append(list_):
     return text
 
 
+def DAR(number):
+    if number == '00':
+        print('成功')
+        return '成功'
+    if number == '01':
+        print('硬件失效')
+        return '硬件失效'
+    if number == '02':
+        print('暂时失效')
+        return '暂时失效'
+    if number == '03':
+        print('拒绝读写')
+        return '拒绝读写'
+    if number == '04':
+        print('对象未定义')
+        return '对象未定义'
+    if number == '05':
+        print('对象接口类不符合')
+        return '对象接口类不符合'
+    if number == '06':
+        print('对象不存在')
+        return '对象不存在'
+    if number == '07':
+        print('类型不匹配')
+        return '类型不匹配'
+    if number == '08':
+        print('越界')
+        return '越界'
+    if number == '09':
+        print('数据块不可用 ')
+        return '数据块不可用'
+    if number == '10':
+        print('分帧传输已取消')
+        return '分帧传输已取消'
+    if number == '11':
+        print('不处于分帧传输状态')
+        return '不处于分帧传输状态'
+    if number == '12':
+        print('块写取消')
+        return '块写取消'
+    if number == '13':
+        print('不存在块写状态')
+        return '不存在块写状态'
+    if number == '14':
+        print('数据块序号无效')
+        return '数据块序号无效'
+    if number == '15':
+        print('密码错/未授权')
+        return '密码错/未授权'
+    if number == '16':
+        print('通信速率不能更改')
+        return '通信速率不能更改'
+    if number == '17':
+        print('年时区数超')
+        return '年时区数超'
+    if number == '18':
+        print('日时段数超')
+        return '日时段数超'
+    if number == '19':
+        print('费率数超')
+        return '费率数超'
+    if number == '20':
+        print('安全认证不匹配')
+        return '安全认证不匹配'
+    if number == '21':
+        print('重复充值')
+        return '重复充值'
+    if number == '22':
+        print('ESAM 验证失败')
+        return 'ESAM 验证失败'
+    if number == '23':
+        print('安全认证失败')
+        return '安全认证失败'
+    if number == '24':
+        print('客户编号不匹配 ')
+        return '客户编号不匹配'
+    if number == '25':
+        print('充值次数错误')
+        return '充值次数错误'
+    if number == '26':
+        print('购电超囤积')
+        return '购电超囤积'
+    if number == '27':
+        print('地址异常')
+        return '地址异常'
+    if number == '28':
+        print('对称解密错误')
+        return '对称解密错误'
+    if number == '29':
+        print('非对称解密错误 ')
+        return '非对称解密错误'
+    if number == '30':
+        print('签名错误')
+        return '签名错误'
+    if number == '31':
+        print('电能表挂起')
+        return '电能表挂起'
+    if number == '32':
+        print('时间标签无效')
+        return '时间标签无效'
+    if number == '33':
+        print('请求超时')
+        return '请求超时'
+    if number == '34':
+        print('ESAM 的P1P2 不正确')
+        return 'ESAM 的P1P2 不正确'
+    if number == '35':
+        print('ESAM 的 LC 错误')
+        return 'ESAM 的 LC 错误'
+    if number == '255':
+        print('其它')
+        return '其它'
+
+
 def get_list_sum(list_):
     text = ''
     for i in list_:
@@ -155,14 +269,6 @@ def BuildMessage(APDU, SA_address, stat='dan'):
 
 
 class Analysis:
-    def IsRight(self, num, code):
-        code = makelist(code)
-        while 1:
-            if code[0] == '68':
-                break
-            else:
-                del code[0]
-
     def start698(self, code):
         self.code = self.clear(makelist(code))
         if self.code == 'ERROR':
@@ -171,7 +277,6 @@ class Analysis:
             lenth = int(self.code[2] + self.code[1], 16)  # exception 68 16
             ctrlcode = self.ctrlc_1(dec2bin(int(self.code[3], 16)).zfill(2))
             code_remain = self.code[4:]
-            # if ctrlcode == 3:
             SA_len_num = self.SASign(dec2bin(int(code_remain[0], 16)).zfill(8))
             self.SA_len = code_remain[1:1 + SA_len_num]
             global SA_add
@@ -179,7 +284,73 @@ class Analysis:
             CA = code_remain[1 + SA_len_num:][0]
             HCS = code_remain[1 + SA_len_num:][1] + code_remain[1 + SA_len_num:][2]
             APDU = code_remain[1 + SA_len_num:][3:-3]
-            print(APDU)
+            print('APDU:', APDU)
+            return self.Information(APDU[0],APDU[1],APDU)
+
+    def Information(self, num, detail, APDU):
+        if num == '01':
+            print(num, '预链接请求')
+        elif num == '81':
+            print(num, '预链接响应')
+        elif num == '02':
+            print(num, '应用链接请求')
+        elif num == '82':
+            print(num, '应用链接响应')
+        elif num == '03':
+            print(num, '断开链接响应')
+        elif num == '83':
+            print(num, '断开链接请求')
+        elif num == '05':
+            print(num, '读取请求', end=' ')
+            if detail == '01':
+                print(detail, '读取一个对象属性请求(GetRequestNormal) ')
+            elif detail == '02':
+                print(detail, '读取若干个对象属性请求 (GetRequestNormalList) ')
+            elif detail == '03':
+                print(detail, '读取一个记录型对象属性请求 (GetRequestRecord) ')
+            elif detail == '04':
+                print(detail, '读取若干个记录型对象属性请求 (GetRequestRecordList) ')
+            elif detail == '05':
+                print(detail, '读取分帧响应的下一个数据块请求 (GetRequestNext) ')
+            elif detail == '06':
+                print(detail, '读取一个对象属性的 MD5 值 (GetRequestMD5) ')
+            else:
+                print('ERROR:05??')
+        elif num == '85':
+            print(num, '读取响应', end=' ')
+            if detail == '01':
+                print(detail, '读取一个对象属性的响应(GetResponseNormal) ')
+
+            elif detail == '02':
+                print(detail, '读取若干个对象属性的响应 (GetResponseNormalList) ')
+            elif detail == '03':
+                print(detail, '读取一个记录型对象属性的响应 (GetResponseRecord) ')
+            elif detail == '04':
+                print(detail, '读取若干个记录型对象属性的响应 (GetResponseRecordList) ')
+            elif detail == '05':
+                print(detail, '分帧响应一个数据块 (GetResponseNext) ')
+            elif detail == '06':
+                print(detail, '读取一个对象属性的 MD5 值的响应 (GetResponseMD5) ')
+            else:
+                print('ERROR:85??')
+        elif num == '06':
+            print(num, '设置请求')
+        elif num == '86':
+            print(num, '设置响应')
+            if detail == '01':
+                print(detail, '设置一个对象属性的确认信息响应')
+                return DAR(APDU[7])
+        elif num == '07':
+            print(num, '操作请求')
+        elif num == '87':
+            print(num, '操作响应')
+        elif num == '08':
+            print(num, '上报回应')
+        elif num == '88':
+            print(num, '上报请求')
+
+        return 0
+
 
     def clear(self, code):
         while 1:
@@ -190,7 +361,6 @@ class Analysis:
                 break
             else:
                 del code[0]
-
         return code
 
     def ctrlc_1(self, num):

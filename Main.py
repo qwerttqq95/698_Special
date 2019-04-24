@@ -1,13 +1,15 @@
 from PyQt5.QtWidgets import QApplication, QMainWindow, QDialog
 import sys, UI_MainWindow, UI_ConnectionSet, traceback, threading, datetime, serial, serial.tools.list_ports, binascii, \
-    time
+    time, Comm,queue
 from PyQt5.QtWidgets import QMessageBox, QDialogButtonBox
-from PyQt5.QtCore import Qt,pyqtSignal
+from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QTextCursor
 
+q = queue.Queue()
 
 class MainWindow(QMainWindow):
     stat_bar = pyqtSignal(str)
+
     def __init__(self):
         QMainWindow.__init__(self)
         self.ui = UI_MainWindow.Ui_MainWindow()
@@ -20,8 +22,6 @@ class MainWindow(QMainWindow):
         self.stat_bar.connect(self.statusBarshow)
         self.ui.actionG.triggered.connect(self.getadd)
         self.port_ = port(self.config.return_port())
-
-
 
     def control(self):
         name = self.sender().text()
@@ -50,7 +50,7 @@ class MainWindow(QMainWindow):
         self.ui.textEdit_2.moveCursor(QTextCursor.End)
 
     def statusBarshow(self, message):
-        self.ui.statusBar.showMessage(message,0)
+        self.ui.statusBar.showMessage(message, 0)
 
     def closeEvent(self, event):
         reply = QMessageBox.question(self, '提示', '你确认要退出吗？', QMessageBox.Yes,
@@ -92,13 +92,14 @@ class MainWindow(QMainWindow):
                  self.ui.action_a, self.ui.action_22, self.ui.action_2, self.ui.action_3, self.ui.action_4,
                  self.ui.action_5, self.ui.action_6, self.ui.action_7, self.ui.action_8, self.ui.action_9,
                  self.ui.action_10, self.ui.action_11, self.ui.action_14, self.ui.action_12, self.ui.action_13,
-                 self.ui.action_17, self.ui.action_18,self.ui.actionShuju,self.ui.actionCanshu]
+                 self.ui.action_17, self.ui.action_18, self.ui.actionShuju, self.ui.actionCanshu]
         for x in list_:
             x.triggered.connect(self.control)
 
     def getadd(self):
         message = '68 17 00 43 45 AA AA AA AA AA AA 10 DA 5F 05 01 03 40 01 02 00 00 90 0F 16'
-        self.port_.write_(message.replace(' ', ''))
+        self.port_.write_list([message.replace(' ', '')])
+
 
 class config(QDialog):
     def __init__(self):
@@ -149,26 +150,64 @@ class config(QDialog):
     def return_port(self):
         return self.serial
 
+
 class port(threading.Thread):
     mesasge = pyqtSignal(str)
+
     def __init__(self, port):
         threading.Thread.__init__(self)
         self.serial = port
+        self.analysis = Comm.Analysis()
+
+
 
     def run(self):
+        global q
         self.serial.open()
+        self.list = []
         while 1:
-            time.sleep(1)
-            num = self.serial.inWaiting()
-            if num > 25:
-                data = str(binascii.b2a_hex(self.serial.read(num)))[2:-1]
-                print('Received: ', data)
-            else:
-                continue
+            if q.empty():
+                time.sleep(1)
+                num = self.serial.inWaiting()
+                if num > 25:
+                    data = str(binascii.b2a_hex(self.serial.read(num)))[2:-1]
+                    print('Received: ', data)
+                    re_value = self.analysis.start698(data)
+                    if re_value == '成功':
+                        continue
+                    elif re_value == 0:
+                        pass
+            self.list = q.get()
+            print('list',self.list)
 
-    def write_(self,message):
-        print(message,len(message))
-        self.serial.write(binascii.a2b_hex(message))
+            if self.list != []:
+                for message in self.list:
+                    self.serial.write(binascii.a2b_hex(message))
+                    s = 1
+                    while 1:
+                        time.sleep(1)
+                        s += 1
+                        if s > 5:
+                            break
+                        num = self.serial.inWaiting()
+                        if num > 25:
+                            data = str(binascii.b2a_hex(self.serial.read(num)))[2:-1]
+                            print('Received: ', data)
+                            re_value = self.analysis.start698(data)
+                            if re_value == '成功':
+                                break
+                            elif re_value == 0:
+                                pass
+                        else:
+                            continue
+
+
+    def write_list(self, message_list):
+        self.list = message_list
+        global q
+        q.put(self.list)
+
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
