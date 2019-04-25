@@ -236,7 +236,8 @@ def dec2bin(num):
 
 
 def BuildMessage(APDU, SA_address, stat='dan'):
-    if SA_address == '':
+    print('sa',SA_address)
+    if SA_address == []:
         message_full = '0'
     else:
         C = '43'
@@ -252,18 +253,18 @@ def BuildMessage(APDU, SA_address, stat='dan'):
         Total_length = hex(5 + lenth + 3 + len(APDUlist) + 3 - 2)[2:].zfill(4)
         lenth1 = Total_length[2:]
         lenth2 = Total_length[0:2]
-        print('Comm line:126', lenth1, lenth2, C, SA_sign, SA_address_nospace, CA)
+        # print('Comm line:126', lenth1, lenth2, C, SA_sign, SA_address_nospace, CA)
         Head = strto0x(makelist(lenth1 + lenth2 + C + SA_sign + SA_address_nospace + CA))
         HCS = str(hex(pppfcs16(0xffff, Head, len(Head)))).zfill(4)[2:]
         if len(HCS) == 3:
             HCS = '0' + HCS
         HCS = HCS[2:] + HCS[0:2]
-        message = strto0x(makelist(lenth1 + lenth2 + C + SA_sign + SA_address_nospace + CA + HCS + APDU))
+        message = strto0x(makelist(lenth1 + lenth2 + C + SA_sign + SA_address_nospace + CA + HCS + APDU.replace(' ', '')))
         FCS = hex(pppfcs16(0xffff, message, len(message))).zfill(4)[2:]
         if len(FCS) == 3:
             FCS = '0' + FCS
         FCS = FCS[2:] + FCS[0:2]
-        message_full = '68' + lenth1 + lenth2 + C + SA_sign + SA_address_nospace + CA + HCS + APDU + FCS + '16'
+        message_full = '68' + lenth1 + lenth2 + C + SA_sign + SA_address_nospace + CA + HCS + APDU.replace(' ', '') + FCS + '16'
         print('组成报文:', message_full)
     return message_full
 
@@ -320,7 +321,12 @@ class Analysis:
             print(num, '读取响应', end=' ')
             if detail == '01':
                 print(detail, '读取一个对象属性的响应(GetResponseNormal) ')
-
+                if list2str(APDU[3:7]) == '40010200':
+                    add = list2str(APDU[10:16])
+                    print('add',add)
+                    global SA_add
+                    SA_add = add
+                    return '地址为:{}'.format(add)
             elif detail == '02':
                 print(detail, '读取若干个对象属性的响应 (GetResponseNormalList) ')
             elif detail == '03':
@@ -344,11 +350,13 @@ class Analysis:
             print(num, '操作请求')
         elif num == '87':
             print(num, '操作响应')
+            if detail == '01':
+                print(detail, '操作一个对象方法的确认信息响应')
+                return DAR(APDU[7])
         elif num == '08':
             print(num, '上报回应')
         elif num == '88':
             print(num, '上报请求')
-
         return 0
 
 
@@ -399,5 +407,8 @@ def SetSA(SA):
     global SA_add
     SA_add = SA
 
+def re_sa():
+    global SA_add
+    return SA_add
 
 SA_add = ''

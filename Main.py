@@ -1,14 +1,16 @@
 from PyQt5.QtWidgets import QApplication, QMainWindow, QDialog
 import sys, UI_MainWindow, UI_ConnectionSet, traceback, threading, datetime, serial, serial.tools.list_ports, binascii, \
-    time, Comm,queue
+    time, Comm, queue
 from PyQt5.QtWidgets import QMessageBox, QDialogButtonBox
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QTextCursor
 
-q = queue.Queue()
+q = queue.Queue(1)
+
 
 class MainWindow(QMainWindow):
     stat_bar = pyqtSignal(str)
+    show_text = pyqtSignal(list)
 
     def __init__(self):
         QMainWindow.__init__(self)
@@ -19,7 +21,10 @@ class MainWindow(QMainWindow):
         self.control_link()
         self.config = config()
         self.ui.actionSd.triggered.connect(lambda: self.config.show())
+
         self.stat_bar.connect(self.statusBarshow)
+        self.show_text.connect(self.showText)
+
         self.ui.actionG.triggered.connect(self.getadd)
         self.port_ = port(self.config.return_port())
 
@@ -38,10 +43,11 @@ class MainWindow(QMainWindow):
                         break
                     else:
                         text = text.split('#')
-                        print(text)
                         dic[text[0]] = text[1]
                 f.close()
                 print('dic', dic)
+                self.port_.write_list(list(dic.items()))
+
                 break
             else:
                 continue
@@ -75,7 +81,9 @@ class MainWindow(QMainWindow):
         self.ui.textEdit.append(datetime.datetime.now().strftime('%m-%d   %T'))
         self.ui.textEdit.append('-----------------------')
 
-    def showText(self, turn, textlist):
+    def showText(self, list_):
+        turn = list_[0]
+        textlist = list_[1]
         if turn == 'L':
             for x in textlist:
                 self.ui.textEdit_2.append(x)
@@ -98,7 +106,7 @@ class MainWindow(QMainWindow):
 
     def getadd(self):
         message = '68 17 00 43 45 AA AA AA AA AA AA 10 DA 5F 05 01 03 40 01 02 00 00 90 0F 16'
-        self.port_.write_list([message.replace(' ', '')])
+        self.port_.write_list([['读地址...', message.replace(' ', '')]])
 
 
 class config(QDialog):
@@ -123,7 +131,6 @@ class config(QDialog):
         self.addItem.sort()
         for addItem in self.addItem:
             self.ui.comboBox.addItem(addItem)
-        self.save()
 
     def save(self):
         self.serial.port = self.ui.comboBox.currentText()
@@ -158,55 +165,73 @@ class port(threading.Thread):
         threading.Thread.__init__(self)
         self.serial = port
         self.analysis = Comm.Analysis()
-
-
+        self.list = []
 
     def run(self):
         global q
         self.serial.open()
-        self.list = []
         while 1:
             if q.empty():
                 time.sleep(1)
                 num = self.serial.inWaiting()
                 if num > 25:
                     data = str(binascii.b2a_hex(self.serial.read(num)))[2:-1]
-                    print('Received: ', data)
+                    print('Received1: ', data)
                     re_value = self.analysis.start698(data)
                     if re_value == '成功':
                         continue
                     elif re_value == 0:
                         pass
-            self.list = q.get()
-            print('list',self.list)
+            self.list_new = q.get()
+            print('list', self.list_new)
 
-            if self.list != []:
-                for message in self.list:
-                    self.serial.write(binascii.a2b_hex(message))
+            if self.list_new != []:
+                for message in self.list_new[0]:
+                    print('message',message)
+                    # MainWindow.show_text.emit(['L', [message[0], Comm.makestr(message[1])]])
+                    if message[1][0] == '6':
+                        self.serial.write(binascii.a2b_hex(message[1]))
+                        MainWindow.show_text.emit(['L', [message[0],Comm.makestr(message[1])]])
+                    else:
+                        new_message = Comm.BuildMessage(message[1], Comm.makelist(sa))
+                        self.serial.write(binascii.a2b_hex(new_message))
+                        MainWindow.show_text.emit(['L', [message[0], Comm.makestr(new_message)]])
                     s = 1
                     while 1:
                         time.sleep(1)
-                        s += 1
-                        if s > 5:
-                            break
                         num = self.serial.inWaiting()
                         if num > 25:
                             data = str(binascii.b2a_hex(self.serial.read(num)))[2:-1]
-                            print('Received: ', data)
+                            print('Received2: ', data)
                             re_value = self.analysis.start698(data)
                             if re_value == '成功':
+                                MainWindow.show_text.emit(['R', ['收到:', Comm.makestr(data),'下发成功']])
                                 break
                             elif re_value == 0:
                                 pass
+                            else:
+                                MainWindow.show_text.emit(['R', ['Received:', Comm.makestr(data), re_value]])
+                                break
+                        s += 1
+                        if s > 5:
+                            break
                         else:
                             continue
 
+            sa = Comm.re_sa()
+            print('re_message:sa',sa)
+            if type(sa) is list:
+                sa = Comm.list2str(sa)
+            MainWindow.ui.lineEdit.setText(Comm.list2str(sa))
+            MainWindow.stat_bar.emit('全部下发完成')
+
 
     def write_list(self, message_list):
-        self.list = message_list
+        self.list.append(message_list)
+        print('self.list: ',self.list)
         global q
         q.put(self.list)
-
+        self.list = []
 
 
 if __name__ == '__main__':
