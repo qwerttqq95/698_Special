@@ -178,10 +178,16 @@
      <addaction name="actionQu"/>
     </widget>
     <widget class="QMenu" name="menu_6">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
      <property name="title">
-      <string>浙江支持数据</string>
+      <string>浙江</string>
      </property>
      <widget class="QMenu" name="menu_7">
+      <property name="enabled">
+       <bool>false</bool>
+      </property>
       <property name="title">
        <string>实时数据</string>
       </property>
@@ -189,6 +195,9 @@
       <addaction name="action0201_2"/>
      </widget>
      <widget class="QMenu" name="menu_3">
+      <property name="enabled">
+       <bool>false</bool>
+      </property>
       <property name="title">
        <string>冻结曲线数据</string>
       </property>
@@ -199,18 +208,9 @@
      <addaction name="actionRi_2"/>
      <addaction name="menu_3"/>
     </widget>
-    <widget class="QMenu" name="menu_9">
-     <property name="title">
-      <string>数据读取</string>
-     </property>
-     <addaction name="action_19"/>
-     <addaction name="action_21"/>
-     <addaction name="separator"/>
-     <addaction name="actionX_2"/>
-    </widget>
     <addaction name="menu_8"/>
     <addaction name="menu_6"/>
-    <addaction name="menu_9"/>
+    <addaction name="actionSichuan"/>
     <addaction name="separator"/>
     <addaction name="actionG"/>
     <addaction name="actionSdf"/>
@@ -339,11 +339,17 @@
    </property>
   </action>
   <action name="action0200_3">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>0200类</string>
    </property>
   </action>
   <action name="action0201_2">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>0201类</string>
    </property>
@@ -535,6 +541,9 @@
    </property>
   </action>
   <action name="actionAPDUzu">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>自定义报文发送</string>
    </property>
@@ -542,6 +551,11 @@
   <action name="action_23">
    <property name="text">
     <string>单地址合闸(第2轮)</string>
+   </property>
+  </action>
+  <action name="actionSichuan">
+   <property name="text">
+    <string>四川专变默认参数</string>
    </property>
   </action>
  </widget>

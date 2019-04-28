@@ -497,6 +497,9 @@
           <property name="text">
            <string>8888</string>
           </property>
+          <property name="maxLength">
+           <number>5</number>
+          </property>
           <property name="alignment">
            <set>Qt::AlignCenter</set>
           </property>

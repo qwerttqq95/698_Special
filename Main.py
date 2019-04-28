@@ -63,6 +63,7 @@ class MainWindow(QMainWindow):
                                      QMessageBox.No)
         if reply == QMessageBox.Yes:
             event.accept()
+            sys.exit()
         else:
             event.ignore()
 
@@ -100,13 +101,29 @@ class MainWindow(QMainWindow):
                  self.ui.action_a, self.ui.action_22, self.ui.action_2, self.ui.action_3, self.ui.action_4,
                  self.ui.action_5, self.ui.action_6, self.ui.action_7, self.ui.action_8, self.ui.action_9,
                  self.ui.action_10, self.ui.action_11, self.ui.action_14, self.ui.action_12, self.ui.action_13,
-                 self.ui.action_17, self.ui.action_18, self.ui.actionShuju, self.ui.actionCanshu]
+                 self.ui.action_17, self.ui.action_18, self.ui.actionShuju, self.ui.actionCanshu, self.ui.actionSh,
+                 self.ui.actionRi, self.ui.actionQu]
         for x in list_:
             x.triggered.connect(self.control)
+        self.ui.actionSichuan.triggered.connect(self.control_sichuan)
 
     def getadd(self):
         message = '68 17 00 43 45 AA AA AA AA AA AA 10 DA 5F 05 01 03 40 01 02 00 00 90 0F 16'
         self.port_.write_list([['读地址...', message.replace(' ', '')]])
+
+    def control_sichuan(self):
+        f = open('Data\\sichuan', 'r', encoding='UTF-8')
+        dic = {}
+        while 1:
+            text = f.readline()[:-1]
+            if text == '':
+                print('Finished...')
+                break
+            else:
+                dic['四川{}'.format(len(dic) + 1)] = text
+        f.close()
+        print('dic', dic)
+        self.port_.write_list(list(dic.items()))
 
 
 class config(QDialog):
@@ -187,15 +204,16 @@ class port(threading.Thread):
 
             if self.list_new != []:
                 for message in self.list_new[0]:
-                    print('message',message)
-                    # MainWindow.show_text.emit(['L', [message[0], Comm.makestr(message[1])]])
+                    print('message', message)
                     if message[1][0] == '6':
                         self.serial.write(binascii.a2b_hex(message[1]))
-                        MainWindow.show_text.emit(['L', [message[0],Comm.makestr(message[1])]])
+                        MainWindow.show_text.emit(['L', [message[0], Comm.makestr(message[1])]])
                     else:
                         new_message = Comm.BuildMessage(message[1], Comm.makelist(sa))
                         self.serial.write(binascii.a2b_hex(new_message))
                         MainWindow.show_text.emit(['L', [message[0], Comm.makestr(new_message)]])
+                        if message[0][2] == '初':
+                            MainWindow.show_text.emit(['L', ['等待10s']])
                     s = 1
                     while 1:
                         time.sleep(1)
@@ -205,7 +223,9 @@ class port(threading.Thread):
                             print('Received2: ', data)
                             re_value = self.analysis.start698(data)
                             if re_value == '成功':
-                                MainWindow.show_text.emit(['R', ['收到:', Comm.makestr(data),'下发成功']])
+                                MainWindow.show_text.emit(['R', ['收到:', Comm.makestr(data), '下发成功']])
+                                if message[0][2] == '初':
+                                    time.sleep(10)
                                 break
                             elif re_value == 0:
                                 pass
@@ -214,21 +234,21 @@ class port(threading.Thread):
                                 break
                         s += 1
                         if s > 5:
+                            MainWindow.show_text.emit(['R', ['接收超时']])
                             break
                         else:
                             continue
 
             sa = Comm.re_sa()
-            print('re_message:sa',sa)
+            print('re_message:sa', sa)
             if type(sa) is list:
                 sa = Comm.list2str(sa)
             MainWindow.ui.lineEdit.setText(Comm.list2str(sa))
             MainWindow.stat_bar.emit('全部下发完成')
 
-
     def write_list(self, message_list):
         self.list.append(message_list)
-        print('self.list: ',self.list)
+        print('self.list: ', self.list)
         global q
         q.put(self.list)
         self.list = []
