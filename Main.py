@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QApplication, QMainWindow, QDialog
 import sys, UI_MainWindow, UI_ConnectionSet, traceback, threading, datetime, serial, serial.tools.list_ports, binascii, \
-    time, Comm, queue
+    time, Comm, queue, UI_APDU, UI_choice
 from PyQt5.QtWidgets import QMessageBox, QDialogButtonBox
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QTextCursor
@@ -18,9 +18,19 @@ class MainWindow(QMainWindow):
         self.ui.setupUi(self)
         self.ui.actionA.triggered.connect(self.about)
         self.ui.textEdit_2.textChanged.connect(self.move_Cursor)
-        self.control_link()
+        global online
+        if online == 0:
+            print('离线模式')
+            self.control_link()
+        else:
+            print('线上模式')
+
+
         self.config = config()
         self.ui.actionSd.triggered.connect(lambda: self.config.show())
+        self.ui.lineEdit.textChanged.connect(self.showmenu_bar)
+        self.apdu = APUD_send()
+        self.ui.actionAPDUzu.triggered.connect(self.apdu.show)
 
         self.stat_bar.connect(self.statusBarshow)
         self.show_text.connect(self.showText)
@@ -102,7 +112,7 @@ class MainWindow(QMainWindow):
                  self.ui.action_5, self.ui.action_6, self.ui.action_7, self.ui.action_8, self.ui.action_9,
                  self.ui.action_10, self.ui.action_11, self.ui.action_14, self.ui.action_12, self.ui.action_13,
                  self.ui.action_17, self.ui.action_18, self.ui.actionShuju, self.ui.actionCanshu, self.ui.actionSh,
-                 self.ui.actionRi, self.ui.actionQu]
+                 self.ui.actionRi, self.ui.actionQu, self.ui.action_24]
         for x in list_:
             x.triggered.connect(self.control)
         self.ui.actionSichuan.triggered.connect(self.control_sichuan)
@@ -125,6 +135,12 @@ class MainWindow(QMainWindow):
         print('dic', dic)
         self.port_.write_list(list(dic.items()))
 
+    def showmenu_bar(self):
+        self.ui.menu_4.setDisabled(0)
+        self.ui.menu_10.setDisabled(0)
+        self.ui.menu_2.setDisabled(0)
+        self.ui.menu_5.setDisabled(0)
+
 
 class config(QDialog):
     def __init__(self):
@@ -134,6 +150,8 @@ class config(QDialog):
         self.serial = serial.Serial()
         self.addItem = self.GetSerialNumber()
         self.port_ = port(self.serial)
+        self.setWindowFlags(Qt.WindowStaysOnTopHint)
+        self.setFixedSize(self.width(), self.height())
         while 1:
             if self.addItem == None:
                 Warn = QMessageBox.warning(self, '警告', '未检测到串口', QMessageBox.Reset | QMessageBox.Cancel)
@@ -160,6 +178,8 @@ class config(QDialog):
         else:
             self.port_.setDaemon(True)
             self.port_.start()
+
+        MainWindow.getadd()
 
     def GetSerialNumber(self):
         SerialNumber = []
@@ -209,7 +229,7 @@ class port(threading.Thread):
                         self.serial.write(binascii.a2b_hex(message[1]))
                         MainWindow.show_text.emit(['L', [message[0], Comm.makestr(message[1])]])
                     else:
-                        new_message = Comm.BuildMessage(message[1], Comm.makelist(sa))
+                        new_message = Comm.BuildMessage(message[1], Comm.makelist(sa)[::-1])
                         self.serial.write(binascii.a2b_hex(new_message))
                         MainWindow.show_text.emit(['L', [message[0], Comm.makestr(new_message)]])
                         if message[0][2] == '初':
@@ -242,7 +262,7 @@ class port(threading.Thread):
             sa = Comm.re_sa()
             print('re_message:sa', sa)
             if type(sa) is list:
-                sa = Comm.list2str(sa)
+                sa = Comm.list2str(sa[::-1])
             MainWindow.ui.lineEdit.setText(Comm.list2str(sa))
             MainWindow.stat_bar.emit('全部下发完成')
 
@@ -254,8 +274,48 @@ class port(threading.Thread):
         self.list = []
 
 
+class APUD_send(QDialog):
+    def __init__(self):
+        QDialog.__init__(self)
+        self.ui = UI_APDU.Ui_Dialog()
+        self.ui.setupUi(self)
+        self.setFixedSize(self.width(), self.height())
+        self.setWindowFlags(Qt.WindowStaysOnTopHint)
+        self.ui.pushButton.clicked.connect(self.GetText)
+
+    def GetText(self):
+        global q
+        self.text = self.ui.textEdit.toPlainText()
+        if self.text:
+            q.put([[['自组APDU', self.text.replace(' ', '')]]])
+
+
+class Choice(QDialog):
+    def __init__(self):
+        QDialog.__init__(self)
+        self.ui = UI_choice.Ui_Dialog()
+        self.ui.setupUi(self)
+        self.ui.pushButton.clicked.connect(self.decide)
+        self.setWindowFlags(Qt.MSWindowsFixedSizeDialogHint)
+
+    def decide(self):
+        global online
+        if self.ui.radioButton.isChecked():
+            online = 1
+        else:
+            online = 0
+        global MainWindow
+        MainWindow = MainWindow()
+        MainWindow.show()
+        self.hide()
+
+    def closeEvent(self, event):
+        sys.exit()
+
+
 if __name__ == '__main__':
+    online = 0
     app = QApplication(sys.argv)
-    MainWindow = MainWindow()
-    MainWindow.show()
+    Choice = Choice()
+    Choice.show()
     sys.exit(app.exec_())

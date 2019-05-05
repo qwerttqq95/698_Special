@@ -324,8 +324,6 @@ class Analysis:
                 if list2str(APDU[3:7]) == '40010200':
                     add = list2str(APDU[10:16])
                     print('add',add)
-                    global SA_add
-                    SA_add = add
                     return '地址为:{}'.format(add)
             elif detail == '02':
                 print(detail, '读取若干个对象属性的响应 (GetResponseNormalList) ')
@@ -411,4 +409,4 @@ def re_sa():
     global SA_add
     return SA_add
 
-SA_add = ''
+SA_add = []
