@@ -1,12 +1,11 @@
 from PyQt5.QtWidgets import QApplication, QMainWindow, QDialog
 import sys, UI_MainWindow, UI_ConnectionSet, traceback, threading, datetime, serial, serial.tools.list_ports, binascii, \
-    time, Comm, queue, UI_APDU, UI_choice
-from PyQt5.QtWidgets import QMessageBox, QDialogButtonBox
+    time, Comm, queue, UI_APDU,Online,Offline
+from PyQt5.QtWidgets import QMessageBox, QDialogButtonBox,QProgressDialog
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QTextCursor
 
 q = queue.Queue(1)
-
 
 class MainWindow(QMainWindow):
     stat_bar = pyqtSignal(str)
@@ -18,16 +17,9 @@ class MainWindow(QMainWindow):
         self.ui.setupUi(self)
         self.ui.actionA.triggered.connect(self.about)
         self.ui.textEdit_2.textChanged.connect(self.move_Cursor)
-        global online
-        if online == 0:
-            print('离线模式')
-            self.control_link()
-        else:
-            print('线上模式')
-
-
+        self.control_link()
         self.config = config()
-        self.ui.actionSd.triggered.connect(lambda: self.config.show())
+        self.ui.actionSd.triggered.connect(self.config.show)
         self.ui.lineEdit.textChanged.connect(self.showmenu_bar)
         self.apdu = APUD_send()
         self.ui.actionAPDUzu.triggered.connect(self.apdu.show)
@@ -37,6 +29,12 @@ class MainWindow(QMainWindow):
 
         self.ui.actionG.triggered.connect(self.getadd)
         self.port_ = port(self.config.return_port())
+        self.probar = Online.Progress()
+        self.ui.actiononline.triggered.connect(lambda :self.probar.setup(QProgressDialog))
+
+        self.off = Offline.check()
+        self.ui.actionSdf.triggered.connect(self.off.show)
+
 
     def control(self):
         name = self.sender().text()
@@ -140,6 +138,8 @@ class MainWindow(QMainWindow):
         self.ui.menu_10.setDisabled(0)
         self.ui.menu_2.setDisabled(0)
         self.ui.menu_5.setDisabled(0)
+        self.ui.menu_9.setDisabled(0)
+        self.ui.actionSdf.setDisabled(0)
 
 
 class config(QDialog):
@@ -178,7 +178,6 @@ class config(QDialog):
         else:
             self.port_.setDaemon(True)
             self.port_.start()
-
         MainWindow.getadd()
 
     def GetSerialNumber(self):
@@ -290,32 +289,8 @@ class APUD_send(QDialog):
             q.put([[['自组APDU', self.text.replace(' ', '')]]])
 
 
-class Choice(QDialog):
-    def __init__(self):
-        QDialog.__init__(self)
-        self.ui = UI_choice.Ui_Dialog()
-        self.ui.setupUi(self)
-        self.ui.pushButton.clicked.connect(self.decide)
-        self.setWindowFlags(Qt.MSWindowsFixedSizeDialogHint)
-
-    def decide(self):
-        global online
-        if self.ui.radioButton.isChecked():
-            online = 1
-        else:
-            online = 0
-        global MainWindow
-        MainWindow = MainWindow()
-        MainWindow.show()
-        self.hide()
-
-    def closeEvent(self, event):
-        sys.exit()
-
-
 if __name__ == '__main__':
-    online = 0
     app = QApplication(sys.argv)
-    Choice = Choice()
-    Choice.show()
+    MainWindow = MainWindow()
+    MainWindow.show()
     sys.exit(app.exec_())

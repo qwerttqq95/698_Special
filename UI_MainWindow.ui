@@ -290,10 +290,20 @@
     <addaction name="action_17"/>
     <addaction name="action_18"/>
    </widget>
+   <widget class="QMenu" name="menu_9">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
+    <property name="title">
+     <string>线上</string>
+    </property>
+    <addaction name="actiononline"/>
+   </widget>
    <addaction name="menuOpen"/>
    <addaction name="menu_4"/>
    <addaction name="menu_10"/>
    <addaction name="menu_2"/>
+   <addaction name="menu_9"/>
    <addaction name="menu_5"/>
    <addaction name="menu"/>
   </widget>
@@ -594,6 +604,11 @@
   <action name="action_24">
    <property name="text">
     <string>单地址跳闸(第2轮)</string>
+   </property>
+  </action>
+  <action name="actiononline">
+   <property name="text">
+    <string>测试</string>
    </property>
   </action>
  </widget>
