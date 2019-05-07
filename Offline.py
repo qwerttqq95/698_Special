@@ -1,11 +1,12 @@
-import UI_Check, UI_MessageCompose, os, threading
+import UI_Check, UI_MessageCompose, os, threading, Main
 from PyQt5.QtWidgets import QDialog, QHeaderView, QMessageBox, QTableWidgetItem
 from PyQt5.QtCore import pyqtSignal
 
 
 class check(QDialog):  # 自定义测试方案
 
-    def __init__(self):
+    def __init__(self, q):
+        self.q = q
         QDialog.__init__(self)
         self.ui = UI_Check.Ui_Form()
         self.ui.setupUi(self)
@@ -14,10 +15,29 @@ class check(QDialog):  # 自定义测试方案
         self.ui.pushButton_3.clicked.connect(self.del_mission)
         self.ui.pushButton_5.clicked.connect(self.refresh)
         self.ui.pushButton_4.clicked.connect(self.lookinto)
+        self.ui.pushButton.clicked.connect(self.distributes)
         self.refresh()
+
+    def distributes(self):
+        row = self.ui.tableWidget.currentRow()
+        name = self.ui.tableWidget.item(row, 0).text()
+        print('distributes:', name)
+        file = open('.\\Data\\check\\{}'.format(name), 'r', encoding='utf-8')
+        dic = {}
+        while 1:
+            text = file.readline()[:-1]
+            if text == '':
+                break
+            else:
+                text = text.split('#')
+                dic[text[0]] = text[1]
+        file.close()
+        print('dic', dic.items())
+        Main.receive(self.q, dic)
 
     def op(self):
         self.compose = compose()
+        self.compose.qwe.connect(self.refresh)
         self.compose.show()
 
     def refresh(self):
@@ -57,9 +77,12 @@ class check(QDialog):  # 自定义测试方案
 
             line += 1
         self.compose.show()
+        file.close()
 
 
 class compose(QDialog):  # 添加方案
+    qwe = pyqtSignal()
+
     def __init__(self):
         QDialog.__init__(self)
         self.ui = UI_MessageCompose.Ui_Form()
@@ -80,7 +103,7 @@ class compose(QDialog):  # 添加方案
         find_diff = os.listdir('.\\Data\\check\\')
         for x in find_diff:
             if name == x:
-                a = QMessageBox.question(self, '提示', '方案名称已存在要覆盖吗?', QMessageBox.Yes, QMessageBox.No)
+                a = QMessageBox.question(self, '提示', '方案名称已存在,要覆盖吗?', QMessageBox.Yes, QMessageBox.No)
                 if a == QMessageBox.Yes:
                     pass
                 else:
@@ -97,13 +120,15 @@ class compose(QDialog):  # 添加方案
 
         file = open('.\\Data\\check\\{}'.format(name), 'w+', encoding='utf-8')
         rowCount = self.ui.tableWidget.rowCount()
+        times = 1
         for row in range(rowCount):
             decribes = self.ui.tableWidget.item(row, 0).text()
             APDU = self.ui.tableWidget.item(row, 1).text()
-
-            file.write(decribes + '#' + APDU + '\n')
+            file.write(str(times) + ' ' + decribes + '#' + APDU + '\n')
+            times += 1
         file.close()
         self.close()
+        self.qwe.emit()
 
     def add_line(self):
         rowCount = self.ui.tableWidget.rowCount()

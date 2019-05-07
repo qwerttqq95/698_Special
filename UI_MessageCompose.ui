@@ -62,14 +62,14 @@
         <number>0</number>
        </property>
        <attribute name="horizontalHeaderVisible">
-        <bool>true</bool>
+        <bool>false</bool>
        </attribute>
        <attribute name="horizontalHeaderCascadingSectionResizes">
         <bool>false</bool>
        </attribute>
        <column>
         <property name="text">
-         <string>name</string>
+         <string>说明</string>
         </property>
         <property name="textAlignment">
          <set>AlignCenter</set>

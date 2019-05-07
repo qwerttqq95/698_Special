@@ -59,5 +59,5 @@ class Ui_Form(object):
         self.pushButton_2.setText(_translate("Form", "添加方案"))
         self.pushButton_4.setText(_translate("Form", "查看选中方案"))
         self.pushButton_3.setText(_translate("Form", "删除选中方案"))
-        self.pushButton.setText(_translate("Form", "下发"))
+        self.pushButton.setText(_translate("Form", "下发选中方案"))
 

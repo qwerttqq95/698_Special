@@ -74,7 +74,7 @@
      <item>
       <widget class="QPushButton" name="pushButton">
        <property name="text">
-        <string>下发</string>
+        <string>下发选中方案</string>
        </property>
       </widget>
      </item>
