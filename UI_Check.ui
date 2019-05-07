@@ -22,6 +22,12 @@
      <property name="dragDropOverwriteMode">
       <bool>false</bool>
      </property>
+     <property name="selectionMode">
+      <enum>QAbstractItemView::SingleSelection</enum>
+     </property>
+     <property name="selectionBehavior">
+      <enum>QAbstractItemView::SelectRows</enum>
+     </property>
      <property name="textElideMode">
       <enum>Qt::ElideMiddle</enum>
      </property>
@@ -38,6 +44,13 @@
       <number>250</number>
      </property>
      <item>
+      <widget class="QPushButton" name="pushButton_5">
+       <property name="text">
+        <string>刷新</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QPushButton" name="pushButton_2">
        <property name="text">
         <string>添加方案</string>
@@ -47,14 +60,14 @@
      <item>
       <widget class="QPushButton" name="pushButton_4">
        <property name="text">
-        <string>查看当前方案</string>
+        <string>查看选中方案</string>
        </property>
       </widget>
      </item>
      <item>
       <widget class="QPushButton" name="pushButton_3">
        <property name="text">
-        <string>删除当前方案</string>
+        <string>删除选中方案</string>
        </property>
       </widget>
      </item>
@@ -70,5 +83,22 @@
   </layout>
  </widget>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>pushButton_2</sender>
+   <signal>clicked()</signal>
+   <receiver>tableWidget</receiver>
+   <slot>update()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>526</x>
+     <y>58</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>424</x>
+     <y>269</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

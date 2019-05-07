@@ -1,6 +1,7 @@
-import UI_Check, UI_MessageCompose, os
+import UI_Check, UI_MessageCompose, os, threading
 from PyQt5.QtWidgets import QDialog, QHeaderView, QMessageBox, QTableWidgetItem
 from PyQt5.QtCore import pyqtSignal
+
 
 class check(QDialog):  # 自定义测试方案
 
@@ -11,8 +12,9 @@ class check(QDialog):  # 自定义测试方案
         self.ui.pushButton_2.clicked.connect(self.op)
         self.ui.tableWidget.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         self.ui.pushButton_3.clicked.connect(self.del_mission)
+        self.ui.pushButton_5.clicked.connect(self.refresh)
+        self.ui.pushButton_4.clicked.connect(self.lookinto)
         self.refresh()
-
 
     def op(self):
         self.compose = compose()
@@ -30,11 +32,32 @@ class check(QDialog):  # 自定义测试方案
 
     def del_mission(self):
         row = self.ui.tableWidget.currentRow()
-        name = self.ui.tableWidget.item(row,0).text()
+        name = self.ui.tableWidget.item(row, 0).text()
         os.remove('.\\Data\\check\\{}'.format(name))
         self.ui.tableWidget.removeRow(row)
-
         self.refresh()
+
+    def lookinto(self):
+        current = self.ui.tableWidget.currentRow()
+        name = self.ui.tableWidget.item(current, 0).text()
+
+        self.compose = compose()
+        self.compose.ui.lineEdit.setText(name)
+        file = open('.\\Data\\check\\{}'.format(name), 'r', encoding='utf-8')
+        line = 0
+        while 1:
+            text = file.readline()[:-1]
+            if text == '':
+                break
+            else:
+                text = text.split('#')
+                self.compose.ui.tableWidget.insertRow(line)
+                self.compose.ui.tableWidget.setItem(line, 0, QTableWidgetItem(text[0]))
+                self.compose.ui.tableWidget.setItem(line, 1, QTableWidgetItem(text[1]))
+
+            line += 1
+        self.compose.show()
+
 
 class compose(QDialog):  # 添加方案
     def __init__(self):
@@ -46,7 +69,7 @@ class compose(QDialog):  # 添加方案
         self.ui.pushButton_3.clicked.connect(self.delLine)
         self.ui.pushButton_4.clicked.connect(self.done_save)
         self.ui.pushButton_5.clicked.connect(self.add_line)
-        self.check = check()
+        self.ui.pushButton.clicked.connect(self.add_delay)
 
     def done_save(self):
         name = self.ui.lineEdit.text()
@@ -57,7 +80,19 @@ class compose(QDialog):  # 添加方案
         find_diff = os.listdir('.\\Data\\check\\')
         for x in find_diff:
             if name == x:
-                QMessageBox.question(self, '提示', '方案名称不能重复!', QMessageBox.Ok)
+                a = QMessageBox.question(self, '提示', '方案名称已存在要覆盖吗?', QMessageBox.Yes, QMessageBox.No)
+                if a == QMessageBox.Yes:
+                    pass
+                else:
+                    return 0
+
+        rowCount = self.ui.tableWidget.rowCount()
+        for row in range(rowCount):
+            try:
+                decribes = self.ui.tableWidget.item(row, 0).text()
+                APDU = self.ui.tableWidget.item(row, 1).text()
+            except:
+                QMessageBox.question(self, '提示', '列表内容不能为空值!', QMessageBox.Ok)
                 return 0
 
         file = open('.\\Data\\check\\{}'.format(name), 'w+', encoding='utf-8')
@@ -65,9 +100,9 @@ class compose(QDialog):  # 添加方案
         for row in range(rowCount):
             decribes = self.ui.tableWidget.item(row, 0).text()
             APDU = self.ui.tableWidget.item(row, 1).text()
-            file.write(decribes + '#' + APDU + '\n')
 
-        self.check.refresh()
+            file.write(decribes + '#' + APDU + '\n')
+        file.close()
         self.close()
 
     def add_line(self):
@@ -83,3 +118,9 @@ class compose(QDialog):  # 添加方案
     def delLine(self):
         posite = self.ui.tableWidget.currentRow()
         self.ui.tableWidget.removeRow(posite)
+
+    def add_delay(self):
+        rowCount = self.ui.tableWidget.rowCount()
+        self.ui.tableWidget.insertRow(rowCount)
+        self.ui.tableWidget.setItem(rowCount, 0, QTableWidgetItem('延时(s)'))
+        self.ui.tableWidget.setItem(rowCount, 1, QTableWidgetItem('60'))
