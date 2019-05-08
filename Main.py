@@ -1,9 +1,10 @@
 from PyQt5.QtWidgets import QApplication, QMainWindow, QDialog
 import sys, UI_MainWindow, UI_ConnectionSet, traceback, threading, datetime, serial, serial.tools.list_ports, binascii, \
-    time, Comm, queue, UI_APDU, Online, Offline,re
+    time, Comm, queue, UI_APDU, Online, Offline, re
 from PyQt5.QtWidgets import QMessageBox, QDialogButtonBox, QProgressDialog
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QTextCursor
+from PyQt5.QtGui import QIcon
 
 
 class MainWindow(QMainWindow):
@@ -22,6 +23,8 @@ class MainWindow(QMainWindow):
         self.ui.lineEdit.textChanged.connect(self.showmenu_bar)
         self.apdu = APUD_send()
         self.ui.actionAPDUzu.triggered.connect(self.apdu.show)
+        self.setWindowIcon(QIcon('engineering.ico'))
+        self.ui.action.triggered.connect(self.close)
 
         self.stat_bar.connect(self.statusBarshow)
         self.show_text.connect(self.showText)
@@ -150,6 +153,7 @@ class config(QDialog):
         self.port_ = port(self.serial)
         self.setWindowFlags(Qt.WindowStaysOnTopHint)
         self.setFixedSize(self.width(), self.height())
+        self.setWindowIcon(QIcon('engineering.ico'))
         while 1:
             if self.addItem == None:
                 Warn = QMessageBox.warning(self, '警告', '未检测到串口', QMessageBox.Reset | QMessageBox.Cancel)
@@ -224,9 +228,13 @@ class port(threading.Thread):
                     for message in self.list_new[0]:
                         print('message', message)
                         if re.search('延时', message[0]):
-                            MainWindow.show_text.emit(['L', [message[0],message[1]]])
+                            MainWindow.show_text.emit(['L', [message[0], message[1]]])
                             print('延时')
                             time.sleep(int(message[1]))
+                            continue
+                        elif re.search('比较', message[0]):
+                            MainWindow.show_text.emit(['L', [message[0], message[1]]])
+#todo
 
                             continue
                         if message[1][0] == '6':
@@ -256,12 +264,15 @@ class port(threading.Thread):
                                 else:
                                     MainWindow.show_text.emit(['R', ['Received:', Comm.makestr(data), re_value]])
                                     break
+
                             s += 1
                             if s > 5:
                                 MainWindow.show_text.emit(['R', ['接收超时']])
                                 break
                             else:
                                 continue
+
+                        comp_data = data
 
                 sa = Comm.re_sa()
                 print('re_message:sa', sa)
@@ -286,6 +297,7 @@ class APUD_send(QDialog):
         self.setFixedSize(self.width(), self.height())
         self.setWindowFlags(Qt.WindowStaysOnTopHint)
         self.ui.pushButton.clicked.connect(self.GetText)
+        self.setWindowIcon(QIcon('engineering.ico'))
 
     def GetText(self):
         global q

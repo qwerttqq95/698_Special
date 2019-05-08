@@ -1,13 +1,15 @@
 import UI_Check, UI_MessageCompose, os, threading, Main
-from PyQt5.QtWidgets import QDialog, QHeaderView, QMessageBox, QTableWidgetItem
+from PyQt5.QtWidgets import QDialog, QHeaderView, QMessageBox, QTableWidgetItem,QTableWidget
 from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtGui import QIcon
 
 
-class check(QDialog):  # 自定义测试方案
+class check(QDialog,QTableWidget):  # 自定义测试方案
 
     def __init__(self, q):
         self.q = q
         QDialog.__init__(self)
+        QTableWidget.__init__(self)
         self.ui = UI_Check.Ui_Form()
         self.ui.setupUi(self)
         self.ui.pushButton_2.clicked.connect(self.op)
@@ -17,6 +19,13 @@ class check(QDialog):  # 自定义测试方案
         self.ui.pushButton_4.clicked.connect(self.lookinto)
         self.ui.pushButton.clicked.connect(self.distributes)
         self.refresh()
+        self.setWindowIcon(QIcon('engineering.ico'))
+
+
+    def mouseDoubleClickEvent(self, event):
+        a = event.globalPos()
+        print(a,'aa')
+
 
     def distributes(self):
         row = self.ui.tableWidget.currentRow()
@@ -60,7 +69,6 @@ class check(QDialog):  # 自定义测试方案
     def lookinto(self):
         current = self.ui.tableWidget.currentRow()
         name = self.ui.tableWidget.item(current, 0).text()
-
         self.compose = compose()
         self.compose.ui.lineEdit.setText(name)
         file = open('.\\Data\\check\\{}'.format(name), 'r', encoding='utf-8')
@@ -93,6 +101,10 @@ class compose(QDialog):  # 添加方案
         self.ui.pushButton_4.clicked.connect(self.done_save)
         self.ui.pushButton_5.clicked.connect(self.add_line)
         self.ui.pushButton.clicked.connect(self.add_delay)
+        self.ui.pushButton_7.clicked.connect(self.para_init)
+        self.ui.pushButton_6.clicked.connect(self.data_init)
+        self.ui.pushButton_8.clicked.connect(self.compare)
+        self.setWindowIcon(QIcon('engineering.ico'))
 
     def done_save(self):
         name = self.ui.lineEdit.text()
@@ -124,7 +136,10 @@ class compose(QDialog):  # 添加方案
         for row in range(rowCount):
             decribes = self.ui.tableWidget.item(row, 0).text()
             APDU = self.ui.tableWidget.item(row, 1).text()
-            file.write(str(times) + ' ' + decribes + '#' + APDU + '\n')
+            if decribes[0] == str(times):
+                file.write(decribes + '#' + APDU + '\n')
+            else:
+                file.write(str(times) + ' ' + decribes + '#' + APDU + '\n')
             times += 1
         file.close()
         self.close()
@@ -149,3 +164,20 @@ class compose(QDialog):  # 添加方案
         self.ui.tableWidget.insertRow(rowCount)
         self.ui.tableWidget.setItem(rowCount, 0, QTableWidgetItem('延时(s)'))
         self.ui.tableWidget.setItem(rowCount, 1, QTableWidgetItem('60'))
+
+    def data_init(self):
+        rowCount = self.ui.tableWidget.rowCount()
+        self.ui.tableWidget.insertRow(rowCount)
+        self.ui.tableWidget.setItem(rowCount, 0, QTableWidgetItem('数据初始化'))
+        self.ui.tableWidget.setItem(rowCount, 1, QTableWidgetItem('07 01 0a 43 00 03 00 00 00'))
+
+    def para_init(self):
+        rowCount = self.ui.tableWidget.rowCount()
+        self.ui.tableWidget.insertRow(rowCount)
+        self.ui.tableWidget.setItem(rowCount, 0, QTableWidgetItem('参数初始化'))
+        self.ui.tableWidget.setItem(rowCount, 1, QTableWidgetItem('07 01 0a 43 00 04 00 00 00'))
+
+    def compare(self):
+        rowCount = self.ui.tableWidget.rowCount()
+        self.ui.tableWidget.insertRow(rowCount)
+        self.ui.tableWidget.setItem(rowCount, 0, QTableWidgetItem('比较(完整APDU)'))
