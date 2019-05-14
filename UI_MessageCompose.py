@@ -45,6 +45,7 @@ class Ui_Form(object):
         self.tableWidget.setHorizontalHeaderItem(1, item)
         self.tableWidget.horizontalHeader().setVisible(True)
         self.tableWidget.horizontalHeader().setCascadingSectionResizes(False)
+        self.tableWidget.verticalHeader().setVisible(False)
         self.verticalLayout_2.addWidget(self.tableWidget)
         self.horizontalLayout_2.addLayout(self.verticalLayout_2)
         self.verticalLayout = QtWidgets.QVBoxLayout()
@@ -75,7 +76,7 @@ class Ui_Form(object):
         self.pushButton_4.setObjectName("pushButton_4")
         self.verticalLayout.addWidget(self.pushButton_4)
         self.textEdit = QtWidgets.QTextEdit(Form)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Ignored)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Maximum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(19)
         sizePolicy.setHeightForWidth(self.textEdit.sizePolicy().hasHeightForWidth())
@@ -127,8 +128,8 @@ class Ui_Form(object):
 "p, li { white-space: pre-wrap; }\n"
 "</style></head><body style=\" font-family:\'SimSun\'; font-size:9pt; font-weight:400; font-style:normal;\">\n"
 "<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">*报文比较:</p>\n"
-"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">  对比上一条的返回结果</p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">  在说明里填写&quot;比较&quot;,APDU内放置要对比上一条的返回结果</p>\n"
 "<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><br /></p>\n"
 "<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">*注意:</p>\n"
-"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">  自定义说明不可包含&quot;延时&quot;&quot;对比&quot;等字样</p></body></html>"))
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">  说明不可包含&quot;延时&quot;&quot;比较&quot;等字样</p></body></html>"))
 

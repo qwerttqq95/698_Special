@@ -1,6 +1,6 @@
 import UI_Check, UI_MessageCompose, os, threading, Main
 from PyQt5.QtWidgets import QDialog, QHeaderView, QMessageBox, QTableWidgetItem,QTableWidget
-from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import pyqtSignal,Qt
 from PyQt5.QtGui import QIcon
 
 
@@ -20,12 +20,8 @@ class check(QDialog,QTableWidget):  # 自定义测试方案
         self.ui.pushButton.clicked.connect(self.distributes)
         self.refresh()
         self.setWindowIcon(QIcon('engineering.ico'))
-
-
-    def mouseDoubleClickEvent(self, event):
-        a = event.globalPos()
-        print(a,'aa')
-
+        self.setWindowFlags(Qt.WindowStaysOnTopHint)
+        self.ui.tableWidget.itemDoubleClicked.connect(self.lookinto)
 
     def distributes(self):
         row = self.ui.tableWidget.currentRow()
@@ -105,6 +101,7 @@ class compose(QDialog):  # 添加方案
         self.ui.pushButton_6.clicked.connect(self.data_init)
         self.ui.pushButton_8.clicked.connect(self.compare)
         self.setWindowIcon(QIcon('engineering.ico'))
+        self.setWindowFlags(Qt.WindowStaysOnTopHint)
 
     def done_save(self):
         name = self.ui.lineEdit.text()
@@ -136,7 +133,7 @@ class compose(QDialog):  # 添加方案
         for row in range(rowCount):
             decribes = self.ui.tableWidget.item(row, 0).text()
             APDU = self.ui.tableWidget.item(row, 1).text()
-            if decribes[0] == str(times):
+            if decribes[0] == str(times)[0]:
                 file.write(decribes + '#' + APDU + '\n')
             else:
                 file.write(str(times) + ' ' + decribes + '#' + APDU + '\n')
@@ -180,4 +177,4 @@ class compose(QDialog):  # 添加方案
     def compare(self):
         rowCount = self.ui.tableWidget.rowCount()
         self.ui.tableWidget.insertRow(rowCount)
-        self.ui.tableWidget.setItem(rowCount, 0, QTableWidgetItem('比较(完整APDU)'))
+        self.ui.tableWidget.setItem(rowCount, 0, QTableWidgetItem('比较'))

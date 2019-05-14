@@ -10,6 +10,7 @@ from PyQt5.QtGui import QIcon
 class MainWindow(QMainWindow):
     stat_bar = pyqtSignal(str)
     show_text = pyqtSignal(list)
+    warm_ = pyqtSignal()
 
     def __init__(self):
         QMainWindow.__init__(self)
@@ -25,6 +26,7 @@ class MainWindow(QMainWindow):
         self.ui.actionAPDUzu.triggered.connect(self.apdu.show)
         self.setWindowIcon(QIcon('engineering.ico'))
         self.ui.action.triggered.connect(self.close)
+        self.warm_.connect(self.warm)
 
         self.stat_bar.connect(self.statusBarshow)
         self.show_text.connect(self.showText)
@@ -36,6 +38,8 @@ class MainWindow(QMainWindow):
 
         self.off = Offline.check(q)
         self.ui.actionSdf.triggered.connect(self.off.show)
+
+        self.ui.actionstop.setDisabled(1)
 
     def control(self):
         name = self.sender().text()
@@ -77,7 +81,10 @@ class MainWindow(QMainWindow):
             event.ignore()
 
     def about(self):
-        QMessageBox.about(self, '关于', '698 Special V1.0')
+        QMessageBox.about(self, '关于', '698 Special V1.1.1')
+
+    def warm(self):
+        QMessageBox.warning(self, '警告', '串口打开失败', QMessageBox.Ok)
 
     def clear(self):
         self.ui.textEdit.clear()
@@ -100,7 +107,9 @@ class MainWindow(QMainWindow):
             self.add_L()
         elif turn == 'R':
             for x in textlist:
-                self.ui.textEdit.append(x)
+                if x == 0:
+                    continue
+                self.ui.textEdit.append(str(x))
             self.add_R()
         else:
             print('ERROR ON turn')
@@ -150,7 +159,7 @@ class config(QDialog):
         self.ui.setupUi(self)
         self.serial = serial.Serial()
         self.addItem = self.GetSerialNumber()
-        self.port_ = port(self.serial)
+
         self.setWindowFlags(Qt.WindowStaysOnTopHint)
         self.setFixedSize(self.width(), self.height())
         self.setWindowIcon(QIcon('engineering.ico'))
@@ -170,6 +179,8 @@ class config(QDialog):
             self.ui.comboBox.addItem(addItem)
 
     def save(self):
+        self.serial = serial.Serial()
+        self.port_ = port(self.serial)
         self.serial.port = self.ui.comboBox.currentText()
         self.serial.baudrate = int(self.ui.comboBox_2.currentText())
         self.serial.parity = self.ui.comboBox_3.currentText()
@@ -207,7 +218,12 @@ class port(threading.Thread):
 
     def run(self):
         global q
-        self.serial.open()
+        last = ''
+        try:
+            self.serial.open()
+        except:
+            MainWindow.warm_.emit()
+            return 0
         while 1:
             if q.empty():
                 time.sleep(1)
@@ -232,11 +248,18 @@ class port(threading.Thread):
                             print('延时')
                             time.sleep(int(message[1]))
                             continue
+
                         elif re.search('比较', message[0]):
                             MainWindow.show_text.emit(['L', [message[0], message[1]]])
-#todo
-
+                            compare_text = message[1].lower()
+                            print('last',last,'compare_text',compare_text.replace(' ', ''))
+                            com = re.search(compare_text.replace(' ', ''),last)
+                            if com:
+                                MainWindow.show_text.emit(['R', ['比较正确']])
+                            else:
+                                MainWindow.show_text.emit(['R', ['比较错误']])
                             continue
+
                         if message[1][0] == '6':
                             self.serial.write(binascii.a2b_hex(message[1]))
                             MainWindow.show_text.emit(['L', [message[0], Comm.makestr(message[1])]])
@@ -244,23 +267,30 @@ class port(threading.Thread):
                             new_message = Comm.BuildMessage(message[1], Comm.makelist(sa)[::-1])
                             self.serial.write(binascii.a2b_hex(new_message))
                             MainWindow.show_text.emit(['L', [message[0], Comm.makestr(new_message)]])
-                            if message[0][2] == '初':
-                                MainWindow.show_text.emit(['L', ['等待10s']])
+                            try:
+                                if message[0][2] == '初':
+                                    MainWindow.show_text.emit(['L', ['等待10s']])
+                            except:
+                                pass
                         s = 1
                         while 1:
                             time.sleep(1)
                             num = self.serial.inWaiting()
                             if num > 25:
                                 data = str(binascii.b2a_hex(self.serial.read(num)))[2:-1]
-                                print('Received2: ', data)
+                                print('Received2: ', Comm.makestr(data))
+                                last = data.lower()
                                 re_value = self.analysis.start698(data)
                                 if re_value == '成功':
                                     MainWindow.show_text.emit(['R', ['收到:', Comm.makestr(data), '下发成功']])
-                                    if message[0][2] == '初':
-                                        time.sleep(10)
+                                    try:
+                                        if message[0][2] == '初':
+                                            time.sleep(10)
+                                    except:
+                                        pass
                                     break
-                                elif re_value == 0:
-                                    pass
+                                # elif re_value == 0:
+                                #     pass
                                 else:
                                     MainWindow.show_text.emit(['R', ['Received:', Comm.makestr(data), re_value]])
                                     break
@@ -271,8 +301,6 @@ class port(threading.Thread):
                                 break
                             else:
                                 continue
-
-                        comp_data = data
 
                 sa = Comm.re_sa()
                 print('re_message:sa', sa)
@@ -309,6 +337,8 @@ class APUD_send(QDialog):
 def receive(q, dic):
     # print('receivr', [list(dic.items())])
     q.put([list(dic.items())])
+
+
 
 
 if __name__ == '__main__':
