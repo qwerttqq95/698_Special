@@ -23,7 +23,7 @@
       <bool>false</bool>
      </property>
      <property name="selectionMode">
-      <enum>QAbstractItemView::SingleSelection</enum>
+      <enum>QAbstractItemView::ContiguousSelection</enum>
      </property>
      <property name="selectionBehavior">
       <enum>QAbstractItemView::SelectRows</enum>
@@ -75,6 +75,13 @@
       <widget class="QPushButton" name="pushButton">
        <property name="text">
         <string>下发选中方案</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="pushButton_6">
+       <property name="text">
+        <string>终止下发</string>
        </property>
       </widget>
      </item>

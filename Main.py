@@ -2,7 +2,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QDialog
 import sys, UI_MainWindow, UI_ConnectionSet, traceback, threading, datetime, serial, serial.tools.list_ports, binascii, \
     time, Comm, queue, UI_APDU, Online, Offline, re
 from PyQt5.QtWidgets import QMessageBox, QDialogButtonBox, QProgressDialog
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import Qt, pyqtSignal,QObject
 from PyQt5.QtGui import QTextCursor
 from PyQt5.QtGui import QIcon
 
@@ -36,9 +36,8 @@ class MainWindow(QMainWindow):
         self.probar = Online.Progress()
         self.ui.actiononline.triggered.connect(lambda: self.probar.setup(QProgressDialog))
 
-        self.off = Offline.check(q)
+        self.off = Offline.check(q,self.port_)
         self.ui.actionSdf.triggered.connect(self.off.show)
-
         self.ui.actionstop.setDisabled(1)
 
     def control(self):
@@ -60,7 +59,6 @@ class MainWindow(QMainWindow):
                 f.close()
                 print('dic', dic)
                 self.port_.write_list(list(dic.items()))
-
                 break
             else:
                 continue
@@ -153,13 +151,13 @@ class MainWindow(QMainWindow):
 
 
 class config(QDialog):
+
     def __init__(self):
         QDialog.__init__(self)
         self.ui = UI_ConnectionSet.Ui_Dialog()
         self.ui.setupUi(self)
         self.serial = serial.Serial()
         self.addItem = self.GetSerialNumber()
-
         self.setWindowFlags(Qt.WindowStaysOnTopHint)
         self.setFixedSize(self.width(), self.height())
         self.setWindowIcon(QIcon('engineering.ico'))
@@ -193,6 +191,7 @@ class config(QDialog):
             self.port_.start()
         MainWindow.getadd()
 
+
     def GetSerialNumber(self):
         SerialNumber = []
         port_list = list(serial.tools.list_ports.comports())
@@ -207,16 +206,25 @@ class config(QDialog):
         return self.serial
 
 
-class port(threading.Thread):
-    mesasge = pyqtSignal(str)
+class port(threading.Thread,QObject ):
+    mesasge = pyqtSignal()
 
     def __init__(self, port):
         threading.Thread.__init__(self)
+        QObject.__init__(self)
         self.serial = port
         self.analysis = Comm.Analysis()
         self.list = []
+        self.__runflag = threading.Event()
+        self.mesasge.connect(self.stop)
+
+    def stop(self):
+        self.__runflag.set()
+        print('stop')
+        print(self.__runflag.is_set(),'stop?is set?')
 
     def run(self):
+        self.__runflag.clear()
         global q
         last = ''
         try:
@@ -239,9 +247,11 @@ class port(threading.Thread):
             else:
                 self.list_new = q.get()
                 print('list', self.list_new)
-
                 if self.list_new != []:
                     for message in self.list_new[0]:
+                        if self.__runflag.isSet():               ###############################
+                            self.__runflag.clear()
+                            break
                         print('message', message)
                         if re.search('延时', message[0]):
                             MainWindow.show_text.emit(['L', [message[0], message[1]]])
@@ -252,8 +262,8 @@ class port(threading.Thread):
                         elif re.search('比较', message[0]):
                             MainWindow.show_text.emit(['L', [message[0], message[1]]])
                             compare_text = message[1].lower()
-                            print('last',last,'compare_text',compare_text.replace(' ', ''))
-                            com = re.search(compare_text.replace(' ', ''),last)
+                            print('last', last, 'compare_text', compare_text.replace(' ', ''))
+                            com = re.search(compare_text.replace(' ', ''), last)
                             if com:
                                 MainWindow.show_text.emit(['R', ['比较正确']])
                             else:
@@ -337,8 +347,6 @@ class APUD_send(QDialog):
 def receive(q, dic):
     # print('receivr', [list(dic.items())])
     q.put([list(dic.items())])
-
-
 
 
 if __name__ == '__main__':

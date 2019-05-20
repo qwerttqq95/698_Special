@@ -6,8 +6,9 @@ from PyQt5.QtGui import QIcon
 
 class check(QDialog,QTableWidget):  # 自定义测试方案
 
-    def __init__(self, q):
+    def __init__(self, q,port):
         self.q = q
+        self.port = port
         QDialog.__init__(self)
         QTableWidget.__init__(self)
         self.ui = UI_Check.Ui_Form()
@@ -22,23 +23,27 @@ class check(QDialog,QTableWidget):  # 自定义测试方案
         self.setWindowIcon(QIcon('engineering.ico'))
         self.setWindowFlags(Qt.WindowStaysOnTopHint)
         self.ui.tableWidget.itemDoubleClicked.connect(self.lookinto)
+        self.ui.pushButton_6.clicked.connect(lambda :self.port.mesasge.emit())
 
     def distributes(self):
-        row = self.ui.tableWidget.currentRow()
-        name = self.ui.tableWidget.item(row, 0).text()
-        print('distributes:', name)
-        file = open('.\\Data\\check\\{}'.format(name), 'r', encoding='utf-8')
-        dic = {}
-        while 1:
-            text = file.readline()[:-1]
-            if text == '':
-                break
-            else:
-                text = text.split('#')
-                dic[text[0]] = text[1]
-        file.close()
-        print('dic', dic.items())
-        Main.receive(self.q, dic)
+        list_ = self.ui.tableWidget.selectedItems()
+        for item in list_:
+            row = item.row()
+            # row = self.ui.tableWidget.currentRow()
+            name = self.ui.tableWidget.item(row, 0).text()
+            print('下发文件名:', name)
+            file = open('.\\Data\\check\\{}'.format(name), 'r', encoding='utf-8')
+            dic = {}
+            while 1:
+                text = file.readline()[:-1]
+                if text == '':
+                    break
+                else:
+                    text = text.split('#')
+                    dic[text[0]] = text[1]
+            file.close()
+            print('dic', dic.items())
+            Main.receive(self.q, dic)
 
     def op(self):
         self.compose = compose()

@@ -17,7 +17,7 @@ class Ui_Form(object):
         self.tableWidget = QtWidgets.QTableWidget(Form)
         self.tableWidget.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         self.tableWidget.setDragDropOverwriteMode(False)
-        self.tableWidget.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        self.tableWidget.setSelectionMode(QtWidgets.QAbstractItemView.ContiguousSelection)
         self.tableWidget.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.tableWidget.setTextElideMode(QtCore.Qt.ElideMiddle)
         self.tableWidget.setObjectName("tableWidget")
@@ -44,6 +44,9 @@ class Ui_Form(object):
         self.pushButton = QtWidgets.QPushButton(Form)
         self.pushButton.setObjectName("pushButton")
         self.verticalLayout.addWidget(self.pushButton)
+        self.pushButton_6 = QtWidgets.QPushButton(Form)
+        self.pushButton_6.setObjectName("pushButton_6")
+        self.verticalLayout.addWidget(self.pushButton_6)
         self.horizontalLayout.addLayout(self.verticalLayout)
 
         self.retranslateUi(Form)
@@ -60,4 +63,5 @@ class Ui_Form(object):
         self.pushButton_4.setText(_translate("Form", "查看选中方案"))
         self.pushButton_3.setText(_translate("Form", "删除选中方案"))
         self.pushButton.setText(_translate("Form", "下发选中方案"))
+        self.pushButton_6.setText(_translate("Form", "终止下发"))
 
