@@ -4,6 +4,19 @@ def list_append(list_):
         text = text + i
     return text
 
+def check(code): #code->list
+    if len(code) < 20:
+        return 1
+    lenth = int(code[2] + code[1], 16)  # 长度
+    if len(code) >= lenth + 2:
+        if code[lenth + 1] == '16':
+            print('check granted')
+            return 0
+        else:
+            return 1
+    else:
+        print('check denied')
+        return 1
 
 def DAR(number):
     if number == '00':
@@ -273,7 +286,7 @@ class Analysis:
     def start698(self, code):
         self.code = self.clear(makelist(code))
         if self.code == 'ERROR':
-            print('star698,ERROR')
+            print('698解析错误,ERROR')
         else:
             lenth = int(self.code[2] + self.code[1], 16)  # exception 68 16
             ctrlcode = self.ctrlc_1(dec2bin(int(self.code[3], 16)).zfill(2))

@@ -1,16 +1,17 @@
-import UI_Check, UI_MessageCompose, os, threading, Main
-from PyQt5.QtWidgets import QDialog, QHeaderView, QMessageBox, QTableWidgetItem,QTableWidget
-from PyQt5.QtCore import pyqtSignal,Qt
-from PyQt5.QtGui import QIcon
+import UI_Check, UI_MessageCompose, os, threading, Main, configparser
+from PyQt5.QtWidgets import QDialog, QLabel, QApplication, QHeaderView, QTableView, QMessageBox, QTableWidgetItem, \
+    QTableWidget
+from PyQt5.QtCore import pyqtSignal, Qt, QModelIndex, QMimeData, QPoint
+from PyQt5.QtGui import QIcon, QDrag, QStandardItem
 
 
-class check(QDialog,QTableWidget):  # 自定义测试方案
+class check(QDialog, QTableView):  # 自定义测试方案
 
-    def __init__(self, q,port):
+    def __init__(self, q, port):
         self.q = q
         self.port = port
         QDialog.__init__(self)
-        QTableWidget.__init__(self)
+        QTableView.__init__(self)
         self.ui = UI_Check.Ui_Form()
         self.ui.setupUi(self)
         self.ui.pushButton_2.clicked.connect(self.op)
@@ -19,11 +20,56 @@ class check(QDialog,QTableWidget):  # 自定义测试方案
         self.ui.pushButton_5.clicked.connect(self.refresh)
         self.ui.pushButton_4.clicked.connect(self.lookinto)
         self.ui.pushButton.clicked.connect(self.distributes)
-        self.refresh()
         self.setWindowIcon(QIcon('engineering.ico'))
-        self.setWindowFlags(Qt.WindowStaysOnTopHint)
+        # self.setWindowFlags(Qt.WindowStaysOnTopHint)
         self.ui.tableWidget.itemDoubleClicked.connect(self.lookinto)
-        self.ui.pushButton_6.clicked.connect(lambda :self.port.mesasge.emit())
+        self.ui.pushButton_6.clicked.connect(lambda: self.port.mesasge.emit())
+        self.load_ini()
+
+        self.ui.tableWidget.acceptDrops()
+
+        self.mModel = None
+        self.mRowHeight = 30
+        self.mValidPress = False
+        self.mRowFrom = 0
+        self.mRowTo = 0
+
+    def load_ini(self):
+        self.conf = configparser.ConfigParser()
+        try:
+            if os.path.exists('config.ini'):
+                self.conf.read('config.ini', encoding='utf-8')
+                if self.conf.has_section('scheme') is True:
+                    self.refresh()
+                else:
+                    self.ini()
+            else:
+                self.ini()
+        except:
+            pass
+
+    def ini(self):
+        ini = open('config.ini', 'w', encoding='utf-8')
+        self.conf.add_section('scheme')
+        plan_order = ''
+        name = os.listdir('.\\Data\\check\\')
+        for x in name:
+            plan_order = plan_order + ',' + x
+        self.conf.set('scheme', 'plan_order', plan_order)
+        self.conf.write(ini)
+        ini.close()
+        self.refresh()
+
+    def closeEvent(self, QCloseEvent):
+        ini = open('config.ini', 'w', encoding='utf-8')
+        count = self.ui.tableWidget.rowCount()
+        plan_order = ''
+        for x in range(count):
+            a = self.ui.tableWidget.item(x, 0).text()
+            plan_order = plan_order + ',' + a
+        self.conf.set('scheme', 'plan_order', plan_order)
+        self.conf.write(ini)
+        ini.close()
 
     def distributes(self):
         list_ = self.ui.tableWidget.selectedItems()
@@ -51,14 +97,22 @@ class check(QDialog,QTableWidget):  # 自定义测试方案
         self.compose.show()
 
     def refresh(self):
+        ini = open('config.ini', 'r', encoding='utf-8')
+        plan_order = self.conf.get('scheme', 'plan_order')[1:].split(',')
         name = os.listdir('.\\Data\\check\\')
         line = 0
-        for x in name:
+        for x in plan_order:
             row = self.ui.tableWidget.rowCount()
             if row != len(name):
                 self.ui.tableWidget.insertRow(row)
             self.ui.tableWidget.setItem(line, 0, QTableWidgetItem(x))
             line += 1
+        if len(name) > len(plan_order):
+            diff = set(name) ^ set(plan_order)
+            for x in diff:
+                self.ui.tableWidget.insertRow(line)
+                self.ui.tableWidget.setItem(line, 0, QTableWidgetItem(x))
+                line += 1
 
     def del_mission(self):
         row = self.ui.tableWidget.currentRow()
@@ -88,6 +142,105 @@ class check(QDialog,QTableWidget):  # 自定义测试方案
         self.compose.show()
         file.close()
 
+    def mousePressEvent(self, e):
+        if e.button() == Qt.LeftButton:
+            index = self.indexAt(e.pos())
+            if index.isValid():
+                self.mValidPress = True
+                self.mDragPoint = e.pos()
+                self.mDragText = self.mModel.item(index.row(), 1).text()
+                self.mDragPointAtItem = self.mDragPoint - QPoint(0, index.row() * self.mRowHeight)
+                self.mRowFrom = index.row()
+        QTableView.mousePressEvent(e)
+
+    def mouseMoveEvent(self, e):
+        if not self.mValidPress:
+            return
+        if e.buttons() & Qt.LeftButton:
+            return
+        if (e.pos() - self.mDragPoint).manhattanLength() < QApplication.startDragDistance():
+            return
+        self.mLabel.show()
+        self.DoDrag()
+        self.mLabel.hide()
+        self.mValidPress = False
+
+    def dragEnterEvent(self, e):
+        if e.mimeData().hasText():
+            e.acceptProposedAction()
+        else:
+            e.ignore()
+            QTableView.dragEnterEvent(e)
+
+    def dragMoveEvent(self, e):
+        if e.mimeData().hasText():
+            nCurRow = 0
+            index = self.indexAt(e.pos())
+            if index.isValid():
+                if (e.pos().y() - index.row() * self.mRowHeight >= self.mRowHeight / 2):
+                    nCurRow = index.row() + 1
+                else:
+                    nCurRow = index.row()
+            else:
+                nCurRow = self.mModel.rowCount()
+            if nCurRow != self.mRowFrom:
+                mRowTo = self.nCurRow
+                self.mLabel.setGeometry(1, mRowTo * self.mRowHeight, self.width() - 2, 2)
+            e.acceptProposedAction()
+            return
+        e.ignore()
+        QTableView.dragMoveEvent(e)
+
+    def dropEvent(self, e):
+        if e.mimeData().hasText():
+            if self.mRowTo != self.mRowFrom:
+                self.MoveRow(self.mRowFrom, self.mRowTo)
+            e.acceptProposedAction()
+            return
+        e.ignore()
+        QTableView.dropEvent(e)
+
+    def DoDrag(self):
+        drag = QDrag()
+        mimeData = QMimeData()
+        mimeData.setText(self.mDragText)
+        drag.setMimeData(mimeData)
+
+        drag.setHotSpot(self.mDragPointAtItem)
+        if drag.exec(Qt.MoveAction) == Qt.MoveAction:
+            pass
+
+    def ResetOrder(self):
+        i = 0
+        while 1:
+            if i < self.mModel.rowCount():
+                self.mModel.item(i, 0).setText(i + 1)
+                i += 1
+            else:
+                break
+
+    def MoveRow(self, from_, to_):
+        if from_ == to_:
+            return
+        item = self.mModel.item(from_, 1)
+        if item:
+            strText = item.text()
+            items = []
+            item0 =  QStandardItem("")
+            item1 =  QStandardItem(strText)
+            items.append(item0)
+            items.append(item1)
+            item0.setTextAlignment(Qt.AlignCenter)
+            self.mModel.insertRow(to_, items)
+            if from_ < to_:
+                self.mModel.removeRow(from_)
+                self.selectRow(to_ - 1)
+            else:
+                self.mModel.removeRow(from_+1)
+                self.selectRow(to_)
+            self.ResetOrder()
+            self.emit.sigRowChange(self.mRowFrom, self.mRowTo)
+
 
 class compose(QDialog):  # 添加方案
     qwe = pyqtSignal()
@@ -106,7 +259,7 @@ class compose(QDialog):  # 添加方案
         self.ui.pushButton_6.clicked.connect(self.data_init)
         self.ui.pushButton_8.clicked.connect(self.compare)
         self.setWindowIcon(QIcon('engineering.ico'))
-        self.setWindowFlags(Qt.WindowStaysOnTopHint)
+        # self.setWindowFlags(Qt.WindowStaysOnTopHint)
 
     def done_save(self):
         name = self.ui.lineEdit.text()

@@ -206,7 +206,7 @@ class config(QDialog):
         return self.serial
 
 
-class port(threading.Thread,QObject ):
+class port(threading.Thread,QObject):
     mesasge = pyqtSignal()
 
     def __init__(self, port):
@@ -215,8 +215,11 @@ class port(threading.Thread,QObject ):
         self.serial = port
         self.analysis = Comm.Analysis()
         self.list = []
-        self.__runflag = threading.Event()
+
         self.mesasge.connect(self.stop)
+
+        self.__runflag = threading.Event()
+        self.__runflag.clear()
 
     def stop(self):
         self.__runflag.set()
@@ -224,7 +227,6 @@ class port(threading.Thread,QObject ):
         print(self.__runflag.is_set(),'stop?is set?')
 
     def run(self):
-        self.__runflag.clear()
         global q
         last = ''
         try:
@@ -232,23 +234,38 @@ class port(threading.Thread,QObject ):
         except:
             MainWindow.warm_.emit()
             return 0
+        data = ''
         while 1:
             if q.empty():
                 time.sleep(1)
                 num = self.serial.inWaiting()
-                if num > 25:
-                    data = str(binascii.b2a_hex(self.serial.read(num)))[2:-1]
+                if num > 0:
+                    data = data + str(binascii.b2a_hex(self.serial.read(num)))[2:-1]
                     print('Received1: ', data)
+
+                    if data[0] == '6' and data[1] == '8':
+                        if Comm.check(Comm.makelist(data)) == 0:
+                            print('找出有效报文', data)
+
+                        else:
+                            print('不完整报文!继续接收:', data)
+                            continue
+
                     re_value = self.analysis.start698(data)
                     if re_value == '成功':
+                        data = ''
                         continue
+
                     elif re_value == 0:
                         pass
+
+
             else:
                 self.list_new = q.get()
                 print('list', self.list_new)
                 if self.list_new != []:
                     for message in self.list_new[0]:
+                        print(self.__runflag.is_set(), 'stop???????')
                         if self.__runflag.isSet():               ###############################
                             self.__runflag.clear()
                             break
@@ -278,23 +295,36 @@ class port(threading.Thread,QObject ):
                             self.serial.write(binascii.a2b_hex(new_message))
                             MainWindow.show_text.emit(['L', [message[0], Comm.makestr(new_message)]])
                             try:
-                                if message[0][2] == '初':
+                                print('message[0]',message[0])
+                                if re.search('初始化',message[0]):
+                                    print('等待10s')
                                     MainWindow.show_text.emit(['L', ['等待10s']])
                             except:
                                 pass
                         s = 1
+                        data = ''
                         while 1:
                             time.sleep(1)
                             num = self.serial.inWaiting()
-                            if num > 25:
-                                data = str(binascii.b2a_hex(self.serial.read(num)))[2:-1]
+                            if num > 0:
+                                data = data + str(binascii.b2a_hex(self.serial.read(num)))[2:-1]
                                 print('Received2: ', Comm.makestr(data))
+
+                                if data[0] == '6' and data[1] == '8':
+                                    if Comm.check(Comm.makelist(data)) == 0:
+                                        print('找出有效报文', data)
+
+                                    else:
+                                        print('不完整报文!继续接收:', data)
+                                        continue
+
                                 last = data.lower()
                                 re_value = self.analysis.start698(data)
+
                                 if re_value == '成功':
                                     MainWindow.show_text.emit(['R', ['收到:', Comm.makestr(data), '下发成功']])
                                     try:
-                                        if message[0][2] == '初':
+                                        if re.search('初始化', message[0]):
                                             time.sleep(10)
                                     except:
                                         pass
@@ -304,6 +334,7 @@ class port(threading.Thread,QObject ):
                                 else:
                                     MainWindow.show_text.emit(['R', ['Received:', Comm.makestr(data), re_value]])
                                     break
+                                data = ''
 
                             s += 1
                             if s > 5:
